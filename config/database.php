@@ -1,0 +1,14 @@
+<!-- config\database.php -->
+
+<?php 
+$host = "localhost"; 
+$user = "root";
+$pass = "";
+$db = "notamin_db";
+
+$conn = mysqli_connect($host, $user, $pass, $db);
+
+if(!$conn) {
+    die("koneksi gagal". mysqli_connect_error());
+}
+

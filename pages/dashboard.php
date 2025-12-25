@@ -1,0 +1,289 @@
+<!-- dashboard.php -->
+
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: auth/login.php");
+    exit;
+}
+
+require "../config/database.php";
+
+$user_id = $_SESSION['user_id'];
+$user_name = $_SESSION['name'];
+$query = mysqli_query(
+    $conn,
+    "SELECT * FROM notes WHERE user_id = $user_id ORDER BY created_at DESC"
+);
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Notamin</title>
+    <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
+        }
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: center;
+            padding: 10px;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar-menu li {
+            margin-bottom: 10px;
+        }
+        .sidebar-menu a {
+            display: block;
+            padding: 12px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(255, 255, 255, 0.2);
+            padding-left: 20px;
+        }
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 250px;
+            right: 0;
+            height: 70px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 999;
+        }
+        .header-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3436;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .btn-logout {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-logout:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            margin-top: 70px;
+            padding: 30px;
+            min-height: calc(100vh - 70px);
+        }
+        /* Note Card */
+        .note-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+        }
+        .note-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .note-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3436;
+            margin-bottom: 10px;
+        }
+        .note-date {
+            color: #636e72;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        .note-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-action {
+            padding: 6px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .btn-view {
+            background: #3498db;
+            color: white;
+        }
+        .btn-view:hover {
+            background: #2980b9;
+            color: white;
+        }
+        .btn-edit {
+            background: #f39c12;
+            color: white;
+        }
+        .btn-edit:hover {
+            background: #e67e22;
+            color: white;
+        }
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #c0392b;
+            color: white;
+        }
+        .btn-add-note {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .btn-add-note:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #636e72;
+        }
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            .header {
+                left: 0;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-header">
+        📒 Notamin
+    </div>
+    <ul class="sidebar-menu">
+        <li><a href="dashboard.php" class="active">📋 Dashboard</a></li>
+        <li><a href="components/note_add.php">➕ Tambah Catatan</a></li>
+    </ul>
+</div>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-title">📝 Catatan Saya</div>
+    <div class="user-info">
+        <span class="user-name">👤 <?= htmlspecialchars($user_name); ?></span>
+        <button class="btn-logout" onclick="confirmLogout()">Logout</button>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+    <a href="components/note_add.php" class="btn-add-note">➕ Tambah Catatan Baru</a>
+
+    <?php if (mysqli_num_rows($query) > 0): ?>
+        <div class="row">
+            <?php while ($note = mysqli_fetch_assoc($query)): ?>
+                <div class="col-md-6 col-lg-4">
+                    <div class="note-card">
+                        <div class="note-title"><?= htmlspecialchars($note['title']); ?></div>
+                        <div class="note-date">📅 <?= date('d M Y H:i', strtotime($note['created_at'])); ?></div>
+                        <div class="note-actions">
+                            <a href="components/note_detail.php?id=<?= $note['id']; ?>" class="btn-action btn-view">Lihat</a>
+                            <a href="components/note_edit.php?id=<?= $note['id']; ?>" class="btn-action btn-edit">Edit</a>
+                            <a href="../controller/note_delete.php?id=<?= $note['id']; ?>" 
+                               class="btn-action btn-delete" 
+                               onclick="return confirm('Yakin ingin menghapus catatan ini?')">Hapus</a>
+                        </div>
+                    </div>
+                </div>
+            <?php endwhile; ?>
+        </div>
+    <?php else: ?>
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h3>Belum ada catatan</h3>
+            <p>Mulai buat catatan pertama kamu!</p>
+        </div>
+    <?php endif; ?>
+</div>
+
+<script src="../assets/js/bootstrap.bundle.min.js"></script>
+<script>
+function confirmLogout() {
+    if (confirm('Yakin ingin logout?')) {
+        window.location.href = 'auth/logout.php';
+    }
+}
+</script>
+</body>
+</html>
